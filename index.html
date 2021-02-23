@@ -1,67 +1,79 @@
 <!DOCTYPE html>
 <html>
+	
 	<head>
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 			<div class = "jumbotron text-center">
-				<h1>Biggest Sports Fan Contest</h1>
+				<h1>Predict the Lottery</h1>
 				
 			</div>
 			
 	
 	</head>
 
-	<form>
+	<form style="margin-left:2.5em">
+		
 		<input class="btn btn-primary" type="reset" value="Reset">
-		<div class="form-group row">
-			<label for="firstname" class="col-2 col-form-label text">First Name</label>
-			<div class="col-2">
-				<input type="text-justify" class="form-control form-control-sm" id="staticEmail">
+		<br>
+		<div class="form-group row" >
+			<div class = "col-1.5">
+				<body> &nbsp; &nbsp; I am participating in &nbsp;</body>
 			</div>
-			<label for="lastname" class="col-2 col-form-label text">Last Name</label>
-			<div class="col-2.5">
-				<input type="text" class="form-control form-control-sm" id="staticEmail">
+			
+			<div class = "col-0.5">
+				<select class="combo">
+				<option><i>Enter Lottery...</i></option>
+				<option>option 2</option>
+				<option>option 3</option>
+				<option> option 4 </option>
+				<option> option 5 </option>
+				</select>
 			</div>
-			<label for="DOB" class="col-2 col-form-label text">Date of Birth</label>
-			<div class="col-1.5">
-				<input type="datetime" class="form-control form-control-sm" id="staticEmail" placeholder="MM/DD/YYYY">
+			
+			<div class = "col-1.5">
+				<p> &nbsp; and I have a time slot of  &nbsp;</p>
 			</div>
+			<input type="text-justify" class="col-0">
+			
+			<div class = "col-1.5">
+				<p> &nbsp; and want to live in a suite with at total occupancy of &nbsp; </p>
+			</div>
+			<div class = "col-0.5">
+				<select class="combo">
+				<option><i>Number of othee people...</i></option>
+				<option>option 2</option>
+				<option>option 3</option>
+				<option> option 4 </option>
+				<option> option 5 </option>
+				</select>
+			</div>
+			
+			<div class = "col-1.5">
+				<p>&nbsp;and is located at &nbsp;</p>
+			</div>
+			
+			<div class = "col-0.5">
+				<select class="combo">
+				<option><i>Location...</i></option>
+				<option>option 2</option>
+				<option>option 3</option>
+				<option> option 4 </option>
+				<option> option 5 </option>
+				</select>
+			</div>
+			
+			
 		</div>
-		<div class="form-group row">
-			<label for="Street" class="col-1 col-form-label text">Street</label>
-			<div class="col-3">
-				<input type="text-justify" class="form-control form-control-sm" id="staticEmail">
-			</div>
-			<label for="city" class="col-md-0.5 col-form-label text">City</label>
-			<div class="col-2">
-				<input type="text-justify" class="form-control form-control-sm" id="staticEmail">
-			</div>
-			<label for="state" class="col-md-0.5 col-form-label text">State</label>
-			<div class="col-1.5">
-				<input type="datetime" class="form-control form-control-sm" id="staticEmail">
-			</div>
-			<label for="zip" class="col-md-1 col-form-label text">Zip Code</label>
-			<div class="col-1.5">
-				<input type="datetime" class="form-control form-control-sm" id="staticEmail">
-			</div>
-		</div>
-		<div class="form-group row">
-			<label for="email" class="col-1 col-form-label text">Email</label>
-			<div class="col-3">
-				<input type="text-justify" class="form-control form-control-sm" id="staticEmail">
-			</div>
-			<label for="phone" class="col-2 col-form-label text">Phone</label>
-			<div class="col-2.5">
-				<input type="text" class="form-control form-control-sm" id="staticEmail">
-			</div>
-		</div>
-		<div class="form-group">
-			<label for="question">Why are you the biggest sports fan?</label>
-			<textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
-		</div>
-		<div class="form-check">
-			<input type="checkbox" class="form-check-input" id="exampleCheck1">
-			<label class="form-check-label" for="exampleCheck1">Would you like to recieve promotional matierals from sportsfan.com?</label>
-		</div>
+		
+		<body style="margin-left:2.5em"><b> This website is designed to help predict the housing lottery for the university lotteries and give users a probablistic estimate of what housing will be available at a given time slot.  
+		In order to use it, you need to know which lottery you are participating it and what time slot you have.  You can then narrow your results by occupancy, location or both.  
+		Currently the site works for the following universites:<br>
+		CNU (Sophmore Housing Lottery)<br>
+		CNU (Upperclassman Housing Lottery)</b><br><br>
+		</body>
+		
 		<input class="btn btn-primary" type="submit" value="Submit">
-	</form>
+		</form>
+		
+	
 </html>
