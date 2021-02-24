@@ -10,7 +10,25 @@
 			
 	
 	</head>
+<?php
+$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
+$username = "admin";
+$dbname = "Capstone";
+$password = "1387194#";
 
+try {
+  $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+  // set the PDO error mode to exception
+  $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $stmt = $conn->prepare("SELECT * FROM Lottery");
+  $stmt->execute();
+  
+$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
+  echo $result;
+} catch(PDOException $e) {
+  echo "Connection failed: " . $e->getMessage();
+}
+?>
 	<form style="margin-left:2.5em">
 		
 		<input class="btn btn-primary" type="reset" value="Reset">
@@ -75,9 +93,13 @@
 		Currently the site works for the following universites:<br>
 		CNU (Sophmore Housing Lottery)<br>
 		CNU (Upperclassman Housing Lottery)</b><br><br>
+<<<<<<< HEAD:index.html
 		<?php
 echo "My first PHP script!";
 ?>
+=======
+		
+>>>>>>> 5620c4216b74bc796e9e2e048f4f0cf73f1d6e75:index.php
 		</body>
 		
 		<input class="btn btn-primary" type="submit" value="Submit">
