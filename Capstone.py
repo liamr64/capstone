@@ -100,7 +100,8 @@ def sendInfo(lotteryInfo, creds):
             data = getSheets(doc['id'], 'A1:B6', creds)
             tables = 'INSERT INTO Lottery (LotteryName, University,StartTime,timeBetween, numSlots, numTimes) '
             values = 'VALUES ("%s", "%s","%s",%d, "%s", %d)' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
-            query = tables + values
+            update = 'ON DUPLICATE KEY UPDATE (StartTime,timeBetween, numSlots, numTimes) VALUES (%s",%d, "%s", %d)' % (data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
+            query = tables + values + update
             print(query)
             sendQuery(query)
 
