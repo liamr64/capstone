@@ -37,7 +37,7 @@ def main():
     for lottery in lotteries:
         lotteryInfo = getFiles(lottery['id'],creds)
         uniId =sendLotteryInfo(lotteryInfo, creds)
-        sendRoomData(lotteryInfo,uniId,creds)
+        sendRoomData(lotteryInfo, uniId,creds)
 
 
     
@@ -107,17 +107,34 @@ def sendLotteryInfo(lotteryInfo, creds):
             uniId=sendQuery('SELECT idLottery from Lottery')
             return uniId[0][0]
 
-def sendRoomData(lotteryInfo,UniId,creds):   
+def sendRoomData(lotteryInfo,uniId,creds):   
     for doc in lotteryInfo:   
         if doc['name'] == AVAILABLE_ROOM:
             data = getSheets(doc['id'], 'A1:E32', creds)
-            processRoomData(data)
+            processRoomData(data,uniId)
 
-def processRoomData(data):
+def processRoomData(data, uniId):
+    data.pop(0)
     for row in data:
-        if len(row) != 0:
-            if row[0] != '' and 'contract' not in row[0]:
-                currentBuilding = row[0]
+        if len(row) != 0 and 'contract' not in row[0]:
+            if row[0] != '':
+                tables = 'INSERT INTO Residence_Hall (ResName, Lottery_idLottery) '
+                values = 'VALUES ("%s", %d) ' % (row[0], uniId)
+                update = 'ON DUPLICATE KEY UPDATE ResName = "%s"' % (row[0])
+                query = tables + values + update
+                print(query)
+                sendQuery(query)
+                buildingId = sendQuery('SELECT idResidence_Hall from Residence_Hall')
+            tables = 'INSERT INTO Room (RoomName, Occupancy,numAvailable, Residence_Hall_idResidence_Hall) '
+            values = 'VALUES ("%s", %d,%d,%d) ' % (row[3],int(row[2]),int(row[1]),buildingId[0][0])
+            update = 'ON DUPLICATE KEY UPDATE numAvailable = %d' % (int(row[1]))
+            query = tables + values + update
+            print(query)
+            sendQuery(query)
+            
+                
+
+            
             
 
 
