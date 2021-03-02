@@ -18,6 +18,7 @@ delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
 MAIN_DIRECTORY = '1XlVByPlwLujL36kwCk4JVpaaP4_QqPvk'
 SAMPLE_RANGE_NAME = 'Class Data!A2:E'
 LOTTERY_DATA = 'Lottery Data'
+AVAILABLE_ROOM = 'Available Room Data (should include all room types)'
 MYSQL_CONFIG = {
   'user': 'admin',
   'password': '1387194#',
@@ -27,19 +28,17 @@ MYSQL_CONFIG = {
 }
 
 def main():
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
     creds = getCreds()
 
     lotteries = getFiles(MAIN_DIRECTORY, creds)
 
     if lotteries is None:
-        print('fuckity fuck fuck fuck no lotteries found thats an issue')
+        print("There are no lotteries.  Even I'm not that good")
     for lottery in lotteries:
-        print(lottery['name'])
         lotteryInfo = getFiles(lottery['id'],creds)
-        sendInfo(lotteryInfo, creds)
+        uniId =sendLotteryInfo(lotteryInfo, creds)
+        sendRoomData(lotteryInfo,uniId,creds)
+
 
     
 
@@ -87,23 +86,40 @@ def getSheets(sheetId,range, creds):
 
 def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
-    curA = conn.cursor(buffered=True)
+    curA = conn.cursor()
     curA.execute(query)
+    results = curA.fetchall()
     conn.commit()
     conn.close()
+    return results
 
 
 
-def sendInfo(lotteryInfo, creds):
+def sendLotteryInfo(lotteryInfo, creds):
     for doc in lotteryInfo:
         if doc['name'] == LOTTERY_DATA:
             data = getSheets(doc['id'], 'A1:B6', creds)
             tables = 'INSERT INTO Lottery (LotteryName, University,StartTime,timeBetween, numSlots, numTimes) '
-            values = 'VALUES ("%s", "%s","%s",%d, "%s", %d)' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
-            update = 'ON DUPLICATE KEY UPDATE (StartTime,timeBetween, numSlots, numTimes) VALUES (%s",%d, "%s", %d)' % (data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
+            values = 'VALUES ("%s", "%s","%s",%d, "%s", %d) ' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
+            update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]))
             query = tables + values + update
-            print(query)
             sendQuery(query)
+            uniId=sendQuery('SELECT idLottery from Lottery')
+            return uniId[0][0]
+
+def sendRoomData(lotteryInfo,UniId,creds):   
+    for doc in lotteryInfo:   
+        if doc['name'] == AVAILABLE_ROOM:
+            data = getSheets(doc['id'], 'A1:E32', creds)
+            processRoomData(data)
+
+def processRoomData(data):
+    for row in data:
+        if len(row) != 0:
+            if row[0] != '' and 'contract' not in row[0]:
+                currentBuilding = row[0]
+            
+
 
 
 
