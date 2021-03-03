@@ -1,7 +1,8 @@
 from __future__ import print_function
 import pickle
 import os.path
-import mysql.connector
+
+
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -26,6 +27,11 @@ MYSQL_CONFIG = {
   'database': 'Capstone',
   'raise_on_warnings': True
 }
+
+import mysql.connector
+if mysql.connector.__version_info__ > (2, 1) and mysql.connector.HAVE_CEXT:
+  MYSQL_CONFIG['use_pure'] = False
+
 
 def main():
     creds = getCreds()
