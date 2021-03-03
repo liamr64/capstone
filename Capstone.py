@@ -38,6 +38,7 @@ def main():
         lotteryInfo = getFiles(lottery['id'],creds)
         uniId =sendLotteryInfo(lotteryInfo, creds)
         sendRoomData(lotteryInfo, uniId,creds)
+        sendSimData(lotteryInfo,uniId, creds)
 
 
     
@@ -112,6 +113,7 @@ def sendRoomData(lotteryInfo,uniId,creds):
         if doc['name'] == AVAILABLE_ROOM:
             data = getSheets(doc['id'], 'A1:E32', creds)
             processRoomData(data,uniId)
+            break
 
 def processRoomData(data, uniId):
     data.pop(0)
@@ -122,22 +124,48 @@ def processRoomData(data, uniId):
                 values = 'VALUES ("%s", %d) ' % (row[0], uniId)
                 update = 'ON DUPLICATE KEY UPDATE ResName = "%s"' % (row[0])
                 query = tables + values + update
-                print(query)
                 sendQuery(query)
-                buildingId = sendQuery('SELECT idResidence_Hall from Residence_Hall')
+                findBuilding = 'SELECT idResidence_Hall from Residence_Hall where ResName = "%s" and Lottery_idLottery = %d' % (row[0], uniId)
+                buildingId = sendQuery(findBuilding)
             tables = 'INSERT INTO Room (RoomName, Occupancy,numAvailable, Residence_Hall_idResidence_Hall) '
             values = 'VALUES ("%s", %d,%d,%d) ' % (row[3],int(row[2]),int(row[1]),buildingId[0][0])
             update = 'ON DUPLICATE KEY UPDATE numAvailable = %d' % (int(row[1]))
             query = tables + values + update
-            print(query)
             sendQuery(query)
             
-                
+def sendSimData(lotteryInfo, uniId, creds):
+    for doc in lotteryInfo:
+        if doc['name'] == 'Faked Data':
+            files = getFiles(doc['id'], creds)
+            break
+    for year in files:
+        data = getSheets(year['id'],'A2:F98',creds)
+        roomIdsQuery = 'SELECT Room.RoomName, Residence_Hall.ResName, Room.id from Room inner join Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d' %(uniId)
+        roomIds = sendQuery(roomIdsQuery)
+        roomDict = createRoomDict(roomIds)
+        processSimData(data, year['name'], roomDict)
 
+def createRoomDict(roomIds):
+    roomDict = {}
+    for roomId in roomIds:
+        roomDict['%s, %s' % (roomId[1], roomId[0])] = roomId[2]
+    return roomDict
+
+
+def processSimData(data, year, roomDict):
+    i = 0
+    while i<len(data):
+        j = 1
+        while j<len(data[i]):
+            if len(data[i][j])>0:
+                tables = 'INSERT INTO SampleData (Room_id, Year,Time, Slot) '
+                values = 'VALUES (%d, %d, "%s", %d) ' % (int(roomDict[data[i][j]]), int(year), data[i][0], j)
+                update = 'ON DUPLICATE KEY UPDATE Room_id = %d' % (roomDict[data[i][j]])
+                query = tables + values + update
+                sendQuery(query)
+            j= j +1
             
-            
-
-
+        i=i+1
 
 
 if __name__ == '__main__':
