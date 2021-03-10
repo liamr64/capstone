@@ -171,7 +171,6 @@ def processSimData(data, year, roomDict):
                 values = 'VALUES (%d, %d, "%s", %d, "%s") ' % (int(roomDict[data[i][j]]), int(year), data[i][0], j, timestamp)
                 update = 'ON DUPLICATE KEY UPDATE updateTime = "%s"' % (timestamp)
                 query = tables + values + update
-                print(query)
                 sendQuery(query)
             j= j +1
             

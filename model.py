@@ -39,8 +39,8 @@ def getData(lottery):
     dataYear = currentYear - 1
     data = ['dummy']
     probs = []
-    while dataYear > currentYear - 6 and len(data)>0:
-        query = 'SELECT * from SampleData where Year = %d' % (dataYear)
+    while dataYear >= currentYear - 6 and len(data)>0:
+        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData where Year = %d' % (dataYear) 
         data = sendQuery(query)
         query = 'SELECT '
         if len(data) > 0:
@@ -50,9 +50,22 @@ def getData(lottery):
 def processYear(data, year):
     totalNumber = {}
     numberInFirst = {}
-    data = sorted(data, key= itemgetter(2,3))
+    total = 0
+    data = sorted(data, key= itemgetter(1,2))
     for record in data:
-        print(record)
+        roomId = record[0]
+        if roomId in totalNumber:
+            if totalNumber == 0:
+                break
+            totalNumber[roomId] = totalNumber[roomId] - 1
+            numberInFirst[roomId] = numberInFirst[roomId] + 1
+            total = total + 1
+        else:
+            query = 'SELECT COUNT(Room_id) from SampleData where Room_id = %d' % (int(roomId))
+            count =sendQuery(query)
+            totalNumber[roomId] = count[0][0]
+            numberInFirst[roomId] = count[0][0]
+    print(numberInFirst)
     
 
 if __name__ == '__main__':
