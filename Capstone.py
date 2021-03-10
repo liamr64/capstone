@@ -1,7 +1,8 @@
 from __future__ import print_function
 import pickle
 import os.path
-
+import datetime
+import time
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -159,15 +160,18 @@ def createRoomDict(roomIds):
 
 
 def processSimData(data, year, roomDict):
+    ts = time.time()
+    timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     i = 0
     while i<len(data):
         j = 1
         while j<len(data[i]):
             if len(data[i][j])>0:
-                tables = 'INSERT INTO SampleData (Room_id, Year,Time, Slot) '
-                values = 'VALUES (%d, %d, "%s", %d) ' % (int(roomDict[data[i][j]]), int(year), data[i][0], j)
-                update = 'ON DUPLICATE KEY UPDATE Room_id = %d' % (roomDict[data[i][j]])
+                tables = 'INSERT INTO SampleData (Room_id, Year,Time, Slot, updateTime) '
+                values = 'VALUES (%d, %d, "%s", %d, "%s") ' % (int(roomDict[data[i][j]]), int(year), data[i][0], j, timestamp)
+                update = 'ON DUPLICATE KEY UPDATE updateTime = "%s"' % (timestamp)
                 query = tables + values + update
+                print(query)
                 sendQuery(query)
             j= j +1
             
