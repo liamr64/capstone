@@ -10,6 +10,7 @@ import mysql.connector
 import datetime
 from operator import itemgetter
 from scipy.stats import hypergeom
+import random
 
 def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
@@ -26,8 +27,7 @@ def main():
         probs = getProbs(lottery)
         finalprobs = getOverallProbs(probs)
         numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
-        print(numSlots)
-        doModel(finalprobs, numSlots)
+        print(doModel(finalprobs, numSlots))
 
 def getLotteries():
     lotteries = []
@@ -94,10 +94,58 @@ def getOverallProbs(listProbs):
 
 def doModel(probs, numSlots):
     numAvailable = getTotalAvailableRooms(probs)
-    while len(probs) > 0:
-        dist = hypergeom(1000, 24, 1)
-        
 
+    modelRuns = []
+    for i in range(0,1):
+        modelRuns.append(modelRun(probs, numAvailable, numSlots))
+        
+#Adjust Probs method needs to be added
+def modelRun(probs, numAvailable, numSlots):
+    dist = hypergeom(1000, 24, 1)
+    available = []
+    anotherRow = True
+    i = 0
+    while anotherRow:
+        availableRow = []
+        for j in range(0,numSlots):
+            hvar = dist.pmf(i)
+            rand1 = random.uniform(0,1)
+            availableRow.append(getCurrentAvailability(probs))
+            if rand1 >= hvar:
+                room = roomPicker(probs)
+                numAvailable[room] = numAvailable[room] -1
+                if numAvailable[room] == 0:
+                    probs[room] = 0
+                    anotherRow = checkIfDone(probs)
+            if not anotherRow:
+              break  
+
+        available.append(availableRow)     
+        i = i+1        
+
+def roomPicker(probs):
+    rand = random.uniform(0,1)
+    total = 0
+    for key, value in probs.items():
+        print(key)
+        if total + value < rand:
+            return key
+        else:
+            total = total + value
+
+def getCurrentAvailability(probs):
+    available = {}
+    for key, value in probs.items():
+        if value != 0:
+            available[key] = True
+        else:
+            available[key] = False
+
+def checkIfDone(probs):
+    for key, value in probs.items():
+        if value != 0:
+            return True
+    return False
 
 def getTotalAvailableRooms(probs):
     numAvailable = {}
