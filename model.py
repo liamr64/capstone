@@ -9,6 +9,7 @@ MYSQL_CONFIG = {
 import mysql.connector
 import datetime
 from operator import itemgetter
+from scipy.stats import hypergeom
 
 def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
@@ -22,7 +23,11 @@ def sendQuery(query):
 def main():
     lotteries = getLotteries()
     for lottery in lotteries:
-        data = getData(lottery)
+        probs = getProbs(lottery)
+        finalprobs = getOverallProbs(probs)
+        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
+        print(numSlots)
+        doModel(finalprobs, numSlots)
 
 def getLotteries():
     lotteries = []
@@ -32,7 +37,8 @@ def getLotteries():
         lotteries.append(lottery[0])
     return lotteries
 
-def getData(lottery):
+#make it only come from lottery
+def getProbs(lottery):
     allYears = []
     currentYear = datetime.datetime.now().year
 
@@ -44,12 +50,15 @@ def getData(lottery):
         data = sendQuery(query)
         query = 'SELECT '
         if len(data) > 0:
-            probs.append(processYear(data, dataYear))
+            probs.append(processYear(data))
         dataYear = dataYear -1
+    return probs
+    
 
-def processYear(data, year):
+def processYear(data):
     totalNumber = {}
     numberInFirst = {}
+    probablity = {}
     total = 0
     data = sorted(data, key= itemgetter(1,2))
     for record in data:
@@ -64,8 +73,38 @@ def processYear(data, year):
             query = 'SELECT COUNT(Room_id) from SampleData where Room_id = %d' % (int(roomId))
             count =sendQuery(query)
             totalNumber[roomId] = count[0][0]
-            numberInFirst[roomId] = count[0][0]
-    print(numberInFirst)
+            numberInFirst[roomId] = 1
+            total = total + 1
+    
+    for roomId in numberInFirst:
+        probablity[roomId] = numberInFirst[roomId]/total
+    return probablity
+
+def getOverallProbs(listProbs):
+    if len(listProbs) == 1:
+        return listProbs[0]
+    elif len(listProbs) == 2:
+        return (.75 * listProbs[0]) + (.5 * listProbs[1])
+    elif len(listProbs) == 3:
+        return (.66 * listProbs[0]) + (.34 * listProbs[1]) + (.33 * listProbs[2])
+    elif len(listProbs) == 4:
+        return (.5 * listProbs[0]) + (.17 * listProbs[1]) + (.16 * listProbs[2]) + (.16 * listProbs[3])
+    elif len(listProbs) == 4:
+        return (.5 * listProbs[0]) + (.125 * listProbs[1]) + (.125 * listProbs[2]) + (.125 * listProbs[3])+ (.125 * listProbs[4])
+
+def doModel(probs, numSlots):
+    numAvailable = getTotalAvailableRooms(probs)
+    while len(probs) > 0:
+        dist = hypergeom(1000, 24, 1)
+        
+
+
+def getTotalAvailableRooms(probs):
+    numAvailable = {}
+    for key, value in probs.items():
+        count = sendQuery('SELECT numAvailable FROM Room WHERE id = %d' % (key))
+        numAvailable[key] = count[0][0]
+    return numAvailable
     
 
 if __name__ == '__main__':
