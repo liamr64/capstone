@@ -94,10 +94,12 @@ def getOverallProbs(listProbs):
 
 def doModel(probs, numSlots):
     numAvailable = getTotalAvailableRooms(probs)
-
     modelRuns = []
-    for i in range(0,1):
-        modelRuns.append(modelRun(probs, numAvailable, numSlots))
+    for i in range(0,1000):
+        tempProbs = dict(probs)
+        tempNumAvailable = dict(numAvailable)
+        modelRuns.append(modelRun(tempProbs, tempNumAvailable, numSlots))
+    return modelRuns
         
 #Adjust Probs method needs to be added
 def modelRun(probs, numAvailable, numSlots):
@@ -115,20 +117,29 @@ def modelRun(probs, numAvailable, numSlots):
                 room = roomPicker(probs)
                 numAvailable[room] = numAvailable[room] -1
                 if numAvailable[room] == 0:
-                    probs[room] = 0
-                    anotherRow = checkIfDone(probs)
+                    probs, anotherRow = adjustProbs(probs, room)
             if not anotherRow:
               break  
 
         available.append(availableRow)     
-        i = i+1        
+        i = i+1     
+    return available   
+
+def adjustProbs(probs, room):
+    newTotal = 1 - probs[room]
+    if newTotal < 1e5:
+        return None, False
+    probs[room] = 0
+    for key, value in probs.items():
+        probs[key] = value/newTotal
+    return probs, True
 
 def roomPicker(probs):
     rand = random.uniform(0,1)
+    rand = float(rand)
     total = 0
     for key, value in probs.items():
-        print(key)
-        if total + value < rand:
+        if total + value > rand:
             return key
         else:
             total = total + value
@@ -140,6 +151,7 @@ def getCurrentAvailability(probs):
             available[key] = True
         else:
             available[key] = False
+    return available
 
 def checkIfDone(probs):
     for key, value in probs.items():
