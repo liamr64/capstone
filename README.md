@@ -9,5 +9,5 @@ In this folder exists the following
 5.index.php - up to date file for webpage
 6. index1.php - old webpage, keeping so that I don't have to use git to revert
 7. makeDatabase.sql - needs to be updated, but creates a databse pretty close to the one that is live currently, will update with MYSQL's extract tool
-8. model.py -this is the acual model, is about 40% of the way dones as of 3/11
+8. model.py -this is the acual model
 9. test.py - dummy file for testing things I want to keep seperate from an actual code base, will be deleted at the end of project

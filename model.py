@@ -1,3 +1,6 @@
+#   This code is for the actual model itself, as opposed to the other python program, which is
+#   the polar
+
 MYSQL_CONFIG = {
   'user': 'admin',
   'password': '1387194#',
@@ -6,7 +9,8 @@ MYSQL_CONFIG = {
   'raise_on_warnings': True
 }
 
-NUMBER_OF_REPS = 100
+#constant determining the number of times the polar runs
+NUMBER_OF_REPS = 1000
 
 import mysql.connector
 from datetime import datetime
@@ -15,7 +19,8 @@ from operator import itemgetter
 from scipy.stats import hypergeom
 import random
 
-
+#This is my send query method, yes I know that it is not very fast
+#I plan to fix this, however Professor Krieder if you are reading this, I didn't
 def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
@@ -25,6 +30,7 @@ def sendQuery(query):
     conn.close()
     return results
 
+#main model method
 def main():
     lotteries = getLotteries()
     for lottery in lotteries:
@@ -34,34 +40,42 @@ def main():
         results = doModel(finalprobs, numSlots)
         processAndSend(results, lottery, numSlots)
 
+#returns the total number of lotteries in the database
 def getLotteries():
     lotteries = []
     query = 'SELECT idLottery FROM Lottery'
     temp = sendQuery(query)
+
     for lottery in temp:
         lotteries.append(lottery[0])
+
     return lotteries
 
+#calculates and returns probablity of a student choosing a specific room type over the last five years
 def getProbs(lottery):
     currentYear = datetime.now().year
-
     dataYear = currentYear - 1
     data = ['dummy']
     probs = []
+
     while dataYear >= currentYear - 6 and len(data)>0:
         query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d' % (lottery, dataYear) 
         data = sendQuery(query)
         if len(data) > 0:
             probs.append(processYear(data))
         dataYear = dataYear -1
+
     return probs
-    
+
+# helper method for getProbs(), turns raw data from database into probabilities
 def processYear(data):
     totalNumber = {}
     numberInFirst = {}
     probablity = {}
     total = 0
+
     data = sorted(data, key= itemgetter(1,2))
+
     for record in data:
         roomId = record[0]
         if roomId in totalNumber:
@@ -81,6 +95,7 @@ def processYear(data):
         probablity[roomId] = numberInFirst[roomId]/total
     return probablity
 
+#Creates a weighted average of up to five years of specific room probabilites (this is what gets used in the actual model)
 def getOverallProbs(listProbs):
     if len(listProbs) == 1:
         return listProbs[0]
@@ -90,10 +105,10 @@ def getOverallProbs(listProbs):
         return (.66 * listProbs[0]) + (.34 * listProbs[1]) + (.33 * listProbs[2])
     elif len(listProbs) == 4:
         return (.5 * listProbs[0]) + (.17 * listProbs[1]) + (.16 * listProbs[2]) + (.16 * listProbs[3])
-    elif len(listProbs) == 4:
+    elif len(listProbs) == 5:
         return (.5 * listProbs[0]) + (.125 * listProbs[1]) + (.125 * listProbs[2]) + (.125 * listProbs[3])+ (.125 * listProbs[4])
 
-
+#Onece specific room probablities have been created, this is where the Monte Carlo happens
 def doModel(probs, numSlots):
     numAvailable = getTotalAvailableRooms(probs)
     modelRuns = []
@@ -103,7 +118,7 @@ def doModel(probs, numSlots):
         modelRuns.append(modelRun(tempProbs, tempNumAvailable, numSlots))
     return modelRuns
         
-#Adjust Probs method needs to be added
+#Individual run of the Monte Carlo Model, basically one simulated housing lottery
 def modelRun(probs, numAvailable, numSlots):
     dist = hypergeom(1000, 24, 1)
     available = []
@@ -125,6 +140,8 @@ def modelRun(probs, numAvailable, numSlots):
         i = i+1     
     return available   
 
+#When all rooms of a type have been selected, this resets the probablities to not include a room type
+#As a side note, this assumes that the probabilties are independent
 def adjustProbs(probs, room):
     newTotal = 1 - probs[room]
     if newTotal < 1e-5:
