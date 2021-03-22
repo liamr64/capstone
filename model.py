@@ -6,10 +6,12 @@ MYSQL_CONFIG = {
   'raise_on_warnings': True
 }
 
-NUMBER_OF_REPS = 1000
+NUMBER_OF_REPS = 100
 
+import re
 import mysql.connector
-import datetime
+from datetime import datetime
+from datetime import timedelta
 from operator import itemgetter
 from scipy.stats import hypergeom
 import random
@@ -31,7 +33,7 @@ def main():
         finalprobs = getOverallProbs(probs)
         numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
         results = doModel(finalprobs, numSlots)
-        processAndSend(results, numSlots)
+        processAndSend(results, lottery, numSlots)
 
 def getLotteries():
     lotteries = []
@@ -43,16 +45,16 @@ def getLotteries():
 
 #make it only come from lottery
 def getProbs(lottery):
-    allYears = []
-    currentYear = datetime.datetime.now().year
+    currentYear = datetime.now().year
 
     dataYear = currentYear - 1
     data = ['dummy']
     probs = []
     while dataYear >= currentYear - 6 and len(data)>0:
-        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData where Year = %d' % (dataYear) 
+        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d' % (lottery, dataYear) 
+        print (query)
         data = sendQuery(query)
-        query = 'SELECT '
+        print(data)
         if len(data) > 0:
             probs.append(processYear(data))
         dataYear = dataYear -1
@@ -117,13 +119,11 @@ def modelRun(probs, numAvailable, numSlots):
             hvar = dist.pmf(i)
             rand1 = random.uniform(0,1)
             availableRow.append(getCurrentAvailability(probs))
-            if rand1 >= hvar:
+            if rand1 >= hvar and anotherRow:
                 room = roomPicker(probs)
                 numAvailable[room] = numAvailable[room] -1
                 if numAvailable[room] == 0:
                     probs, anotherRow = adjustProbs(probs, room)
-            if not anotherRow:
-              break  
 
         available.append(availableRow)     
         i = i+1     
@@ -131,7 +131,7 @@ def modelRun(probs, numAvailable, numSlots):
 
 def adjustProbs(probs, room):
     newTotal = 1 - probs[room]
-    if newTotal < 1e5:
+    if newTotal < 1e-5:
         return None, False
     probs[room] = 0
     for key, value in probs.items():
@@ -149,6 +149,8 @@ def roomPicker(probs):
             total = total + value
 
 def getCurrentAvailability(probs):
+    if probs is None:
+        return None
     available = {}
     for key, value in probs.items():
         if value != 0:
@@ -170,25 +172,49 @@ def getTotalAvailableRooms(probs):
         numAvailable[key] = count[0][0]
     return numAvailable
     
-def processAndSend(results, numSlots):
+def processAndSend(results, lottery, numSlots):
     firstDict = results[0][0][0]
-    print(firstDict)
-    print(print(len(results[0][0])))
+    startTime = sendQuery('SELECT StartTime FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
+    timeBetween = sendQuery('SELECT timeBetween FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
+    startTime = datetime.strptime(startTime, '%I:%M')
+    currentTime = startTime
+
     rooms = {}
     for key, value in firstDict.items():
         rooms[key] = 0
+    # for result in results:
+    #     times = len(result)
+    #     for time in result:
+    #         slots = len(time)
+    #         print(times, slots)
+    # return
     
+    k =0
+    while k < len(results[0]):
     #add more looping here
-    tempRooms = dict(rooms)
-    i = 0
-    while i < len(results):
-        for key, value in firstDict.items():
-            if results[i][0][0][key]:
-                tempRooms[key] = tempRooms[key] + 1
-        i = i+1    
-    for key, value in tempRooms.items():
-        percentOccupied = value/NUMBER_OF_REPS
-        print(percentOccupied)
+        tempRooms = dict(rooms)
+        i = 0
+        while i < len(results):
+            for key, value in firstDict.items():
+                #print(i,k)
+                for time in results[i][k]:
+                    if time is not None and time[key]:
+                        tempRooms[key] = tempRooms[key] + 1
+                        #print(key, tempRooms[key], currentTime)
+            i = i+1
+        k = k + 1
+
+        for key, value in tempRooms.items():
+            percentOccupied = float(value)/float(NUMBER_OF_REPS * numSlots)
+            print(percentOccupied)
+            tables = 'INSERT INTO ModelData (Room_id, Time, probability) '
+            values = 'VALUES (%d, "%s", %f) ' % (key, str(currentTime.time())[0:5], percentOccupied)
+            update = 'ON DUPLICATE KEY UPDATE probability = %f' % (percentOccupied)
+            query = tables + values + update
+            print(query)
+            sendQuery(query)
+    
+        currentTime = currentTime + timedelta(minutes=timeBetween)
 
         
         
