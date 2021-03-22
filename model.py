@@ -6,11 +6,14 @@ MYSQL_CONFIG = {
   'raise_on_warnings': True
 }
 
+NUMBER_OF_REPS = 1000
+
 import mysql.connector
 import datetime
 from operator import itemgetter
 from scipy.stats import hypergeom
 import random
+
 
 def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
@@ -27,7 +30,8 @@ def main():
         probs = getProbs(lottery)
         finalprobs = getOverallProbs(probs)
         numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
-        print(doModel(finalprobs, numSlots))
+        results = doModel(finalprobs, numSlots)
+        processAndSend(results, numSlots)
 
 def getLotteries():
     lotteries = []
@@ -54,7 +58,6 @@ def getProbs(lottery):
         dataYear = dataYear -1
     return probs
     
-
 def processYear(data):
     totalNumber = {}
     numberInFirst = {}
@@ -92,10 +95,11 @@ def getOverallProbs(listProbs):
     elif len(listProbs) == 4:
         return (.5 * listProbs[0]) + (.125 * listProbs[1]) + (.125 * listProbs[2]) + (.125 * listProbs[3])+ (.125 * listProbs[4])
 
+
 def doModel(probs, numSlots):
     numAvailable = getTotalAvailableRooms(probs)
     modelRuns = []
-    for i in range(0,1000):
+    for i in range(0,NUMBER_OF_REPS):
         tempProbs = dict(probs)
         tempNumAvailable = dict(numAvailable)
         modelRuns.append(modelRun(tempProbs, tempNumAvailable, numSlots))
@@ -166,6 +170,29 @@ def getTotalAvailableRooms(probs):
         numAvailable[key] = count[0][0]
     return numAvailable
     
+def processAndSend(results, numSlots):
+    firstDict = results[0][0][0]
+    print(firstDict)
+    print(print(len(results[0][0])))
+    rooms = {}
+    for key, value in firstDict.items():
+        rooms[key] = 0
+    
+    #add more looping here
+    tempRooms = dict(rooms)
+    i = 0
+    while i < len(results):
+        for key, value in firstDict.items():
+            if results[i][0][0][key]:
+                tempRooms[key] = tempRooms[key] + 1
+        i = i+1    
+    for key, value in tempRooms.items():
+        percentOccupied = value/NUMBER_OF_REPS
+        print(percentOccupied)
+
+        
+        
+        
 
 if __name__ == '__main__':
     main()
