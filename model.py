@@ -8,7 +8,6 @@ MYSQL_CONFIG = {
 
 NUMBER_OF_REPS = 100
 
-import re
 import mysql.connector
 from datetime import datetime
 from datetime import timedelta
@@ -43,7 +42,6 @@ def getLotteries():
         lotteries.append(lottery[0])
     return lotteries
 
-#make it only come from lottery
 def getProbs(lottery):
     currentYear = datetime.now().year
 
@@ -52,9 +50,7 @@ def getProbs(lottery):
     probs = []
     while dataYear >= currentYear - 6 and len(data)>0:
         query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d' % (lottery, dataYear) 
-        print (query)
         data = sendQuery(query)
-        print(data)
         if len(data) > 0:
             probs.append(processYear(data))
         dataYear = dataYear -1
@@ -182,39 +178,36 @@ def processAndSend(results, lottery, numSlots):
     rooms = {}
     for key, value in firstDict.items():
         rooms[key] = 0
-    # for result in results:
-    #     times = len(result)
-    #     for time in result:
-    #         slots = len(time)
-    #         print(times, slots)
-    # return
     
+    maxResultLength = 0
+    for result in results:
+        if len(result) > maxResultLength:
+            maxResultLength = len(result)
+
     k =0
-    while k < len(results[0]):
-    #add more looping here
+    while k < maxResultLength:
         tempRooms = dict(rooms)
         i = 0
         while i < len(results):
             for key, value in firstDict.items():
-                #print(i,k)
-                for time in results[i][k]:
-                    if time is not None and time[key]:
-                        tempRooms[key] = tempRooms[key] + 1
-                        #print(key, tempRooms[key], currentTime)
+                if k < len(results[i]):
+                    for time in results[i][k]:
+                        if time is not None and time[key]:
+                            tempRooms[key] = tempRooms[key] + 1
             i = i+1
         k = k + 1
 
         for key, value in tempRooms.items():
             percentOccupied = float(value)/float(NUMBER_OF_REPS * numSlots)
-            print(percentOccupied)
             tables = 'INSERT INTO ModelData (Room_id, Time, probability) '
             values = 'VALUES (%d, "%s", %f) ' % (key, str(currentTime.time())[0:5], percentOccupied)
             update = 'ON DUPLICATE KEY UPDATE probability = %f' % (percentOccupied)
             query = tables + values + update
-            print(query)
             sendQuery(query)
-    
+
+        print("%s added to model" % (str(currentTime.time())[0:5]))
         currentTime = currentTime + timedelta(minutes=timeBetween)
+        
 
         
         
