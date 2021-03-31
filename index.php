@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-	
+
 	<head>
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 			<div class = "jumbotron text-center">
@@ -10,26 +10,8 @@
 			
 	
 	</head>
-<?php
-$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
-$username = "admin";
-$dbname = "Capstone";
-$password = "1387194#";
-
-try {
-  $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
-  // set the PDO error mode to exception
-  $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  $stmt = $conn->prepare("SELECT * FROM Lottery");
-  $stmt->execute();
-  
-$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
-  echo $result;
-} catch(PDOException $e) {
-  echo "Connection failed: " . $e->getMessage();
-}
-?>
-	<form style="margin-left:2.5em">
+		
+	<form  action = "/capstone/test.php" style="margin-left:2.5em">
 		
 		<input class="btn btn-primary" type="reset" value="Reset">
 
@@ -40,14 +22,39 @@ $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
 			
 			<div class = "col-0.5">
 				<br>
-				<select class="combo">
-				<option><i>Enter Lottery...</i></option>
-				<option>option 2</option>
-				<option>option 3</option>
-				<option> option 4 </option>
-				<option> option 5 </option>
+				<select class="combo" name = "lottery">
+					<?php
+						$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
+						$username = "admin";
+						$dbname = "Capstone";
+						$password = "1387194#";
+
+						try {
+							$conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+							// set the PDO error mode to exception
+							$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+							$stmt = $conn->prepare("SELECT LotteryName FROM Lottery");
+							$stmt->execute();
+							echo "<option><i>Enter Lottery...</i></option>";
+							// set the resulting array to associative
+							$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
+							$lotteries = $stmt->fetchAll();
+		
+							
+							foreach ($lotteries[0] as $k=>$l) {
+									echo "<option><i>$l</i></option>";
+								}
+							}		
+						catch(PDOException $e) {
+							echo "Connection failed: " . $e->getMessage();
+							}
+						?>
+				
+				
 				</select>
 			</div>
+			
+			
 			
 			<div class = "col-1.5">
 				<p><br> &nbsp; and I have a time slot of  &nbsp;</p>
