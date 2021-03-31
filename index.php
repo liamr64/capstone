@@ -100,7 +100,13 @@
 		Currently the site works for the following universites:<br>
 		CNU (Sophmore Housing Lottery)<br>
 		CNU (Upperclassman Housing Lottery)</b><br><br>
+<<<<<<< HEAD:index.html
+		<?php
+echo "My first PHP script!";
+?>
+=======
 		
+>>>>>>> 5620c4216b74bc796e9e2e048f4f0cf73f1d6e75:index.php
 		</body>
 		
 		<input class="btn btn-primary" type="submit" value="Submit">
