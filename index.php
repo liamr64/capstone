@@ -10,9 +10,18 @@
 			
 	
 	</head>
-		
-	<form  action = "/capstone/test.php" style="margin-left:2.5em">
-		
+	
+	<?php
+		$lotterySet = isset($_GET["lottery"]) and strcmp($_GET["lottery"], "Enter Lottery...") !== 0;
+		$timeSet = isset($_GET["time"]);
+		if ($timeSet){
+			echo "<form  action = \"/capstone/test.php\" style=\"margin-left:2.5em\">";
+		} else {
+			echo "<form  action = \"/capstone/index.php\" style=\"margin-left:2.5em\">";
+		}
+	?>
+	
+	
 		<input class="btn btn-primary" type="reset" value="Reset">
 
 		<div class="form-group row" >
@@ -59,14 +68,15 @@
 			<div class = "col-1.5">
 				<p><br> &nbsp; and I have a time slot of  &nbsp;</p>
 			</div>
-			<input type="time" class="col-0" size="4">
+			<input type="time" class="col-0" size="4" name = "time" <?php if (!$lotterySet){echo "disabled = \"disabled\"";} ?>/>
 			
 			<div class = "col-1.5">
 				<p> <br>&nbsp; and want to live in a suite with at total occupancy of &nbsp; </p>
 			</div>
 			<div class = "col-0.5">
 			<br>
-				<select class="combo">
+			
+				<select class="combo" disabled = "disabled">
 				<option><i>Number of other people...</i></option>
 				<option>option 2</option>
 				<option>option 3</option>
@@ -81,7 +91,7 @@
 			
 			<div class = "col-0.5">
 			<br>
-				<select class="combo">
+				<select class="combo" disabled = "disabled">
 				<option><i>Location...</i></option>
 				<option>option 2</option>
 				<option>option 3</option>
@@ -100,13 +110,8 @@
 		Currently the site works for the following universites:<br>
 		CNU (Sophmore Housing Lottery)<br>
 		CNU (Upperclassman Housing Lottery)</b><br><br>
-<<<<<<< HEAD:index.html
-		<?php
-echo "My first PHP script!";
-?>
-=======
+
 		
->>>>>>> 5620c4216b74bc796e9e2e048f4f0cf73f1d6e75:index.php
 		</body>
 		
 		<input class="btn btn-primary" type="submit" value="Submit">

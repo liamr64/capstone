@@ -1,5 +1,7 @@
 <html>
 </body>
-Test
+<?php 
+	$test = isset($_GET["ten"]);
+	echo $test?>
 </body>
 </html>
