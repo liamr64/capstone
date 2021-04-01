@@ -1,7 +1,5 @@
 <html>
 </body>
-<?php 
-	$test = isset($_GET["ten"]);
-	echo $test?>
+<?php echo $_GET["lottery"]; ?>
 </body>
 </html>
