@@ -125,7 +125,7 @@
 			
 			<div class = "col-0.5">
 			<br>
-				<select class="combo" <?php if (!$lotterySet){echo "disabled = \"disabled\"";} ?>>
+				<select class="combo"  name = "location" <?php if (!$lotterySet){echo "disabled = \"disabled\"";} ?>>
 				<option><i>Location...</i></option>
 				<?php
 						$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
