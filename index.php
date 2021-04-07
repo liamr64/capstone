@@ -31,7 +31,7 @@
 			
 			<div class = "col-0.5">
 				<br>
-				<select class="combo" name = "lottery">
+				<select class="combo" name = "lottery" <?php if ($lotterySet){echo "disabled = \"disabled\"";} ?>>
 					<?php
 						$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
 						$username = "admin";
@@ -44,7 +44,15 @@
 							$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 							$stmt = $conn->prepare("SELECT LotteryName FROM Lottery");
 							$stmt->execute();
-							echo "<option><i>Enter Lottery...</i></option>";
+							if ($lotterySet){
+								$pulled = $_GET["lottery"];
+								echo "<option><i>$pulled</i></option>";
+							}
+							else {
+								echo "<option><i>Enter Lottery...</i></option>";
+							}
+							
+							
 							// set the resulting array to associative
 							$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
 							$lotteries = $stmt->fetchAll();
@@ -177,7 +185,8 @@
 		
 		</body>
 		
-		<input class="btn btn-primary" type="submit" value="Submit">
+		
+		<input class="btn btn-primary" type="submit" <?php if (!$lotterySet){echo "value = \"Next\"";} else{echo "value = \"Submit\"";} ?>>
 		</form>
 		
 	
