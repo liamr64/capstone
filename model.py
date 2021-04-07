@@ -59,7 +59,7 @@ def getProbs(lottery):
     probs = []
 
     while dataYear >= currentYear - 6 and len(data)>0:
-        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d' % (lottery, dataYear) 
+        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d and Residence_Hall_idResidence_Hall = idResidence_Hall' % (lottery, dataYear) 
         data = sendQuery(query)
         if len(data) > 0:
             probs.append(processYear(data))
@@ -110,7 +110,7 @@ def getOverallProbs(listProbs):
 
 #Onece specific room probablities have been created, this is where the Monte Carlo happens
 def doModel(probs, numSlots):
-    numAvailable = getTotalAvailableRooms(probs)
+    numAvailable = getTotalAvailableRooms()
     modelRuns = []
     for i in range(0,NUMBER_OF_REPS):
         tempProbs = dict(probs)
@@ -129,7 +129,7 @@ def modelRun(probs, numAvailable, numSlots):
         for j in range(0,numSlots):
             hvar = dist.pmf(i)
             rand1 = random.uniform(0,1)
-            availableRow.append(getCurrentAvailability(probs))
+            availableRow.append(getCurrentAvailability(numAvailable))
             if rand1 >= hvar and anotherRow:
                 room = roomPicker(probs)
                 numAvailable[room] = numAvailable[room] -1
@@ -138,6 +138,29 @@ def modelRun(probs, numAvailable, numSlots):
 
         available.append(availableRow)     
         i = i+1     
+    
+    zeroProb = {}
+    for key, value in numAvailable.items():
+        if value != 0:
+            zeroProb[key] = value
+    
+    if len(zeroProb) > 0:
+        newProb = {}
+        for key, value in zeroProb.items():
+            newProb[key] = 1/len(zeroProb)
+        anotherRow = True
+        while anotherRow:
+            for j in range(0,numSlots):
+                hvar = dist.pmf(i)
+                rand1 = random.uniform(0,1)
+                availableRow.append(getCurrentAvailability(numAvailable))
+                if rand1 >= hvar and anotherRow:
+                    room = roomPicker(newProb)
+                    numAvailable[room] = numAvailable[room] -1
+                    if numAvailable[room] == 0:
+                        newProb, anotherRow = adjustProbs(newProb, room)
+            available.append(availableRow) 
+    
     return available   
 
 #When all rooms of a type have been selected, this resets the probablities to not include a room type
@@ -161,11 +184,11 @@ def roomPicker(probs):
         else:
             total = total + value
 
-def getCurrentAvailability(probs):
-    if probs is None:
+def getCurrentAvailability(numAvailable):
+    if numAvailable is None:
         return None
     available = {}
-    for key, value in probs.items():
+    for key, value in numAvailable.items():
         if value != 0:
             available[key] = True
         else:
@@ -178,11 +201,11 @@ def checkIfDone(probs):
             return True
     return False
 
-def getTotalAvailableRooms(probs):
+def getTotalAvailableRooms():
     numAvailable = {}
-    for key, value in probs.items():
-        count = sendQuery('SELECT numAvailable FROM Room WHERE id = %d' % (key))
-        numAvailable[key] = count[0][0]
+    results = sendQuery('SELECT id, numAvailable FROM Room')
+    for result in results:
+        numAvailable[result[0]] = result[1]
     return numAvailable
     
 def processAndSend(results, lottery, numSlots):

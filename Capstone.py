@@ -124,6 +124,7 @@ def sendRoomData(lotteryInfo,uniId,creds):
 
 def processRoomData(data, uniId):
     data.pop(0)
+    print(data)
     for row in data:
         if len(row) != 0 and 'contract' not in row[0]:
             if row[0] != '':
@@ -138,8 +139,11 @@ def processRoomData(data, uniId):
             values = 'VALUES ("%s", %d,%d,%d) ' % (row[3],int(row[2]),int(row[1]),buildingId[0][0])
             update = 'ON DUPLICATE KEY UPDATE numAvailable = %d' % (int(row[1]))
             query = tables + values + update
+            print(query)
             sendQuery(query)
-            
+
+
+                
 def sendSimData(lotteryInfo, uniId, creds):
     for doc in lotteryInfo:
         if doc['name'] == 'Faked Data':
