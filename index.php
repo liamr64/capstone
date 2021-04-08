@@ -15,9 +15,9 @@
 		$lotterySet = (isset($_GET["lottery"]) and strcmp($_GET["lottery"], "Enter Lottery...") !== 0);
 		$timeSet = isset($_GET["time"]);
 		if ($lotterySet){
-			echo "<form  action = \"/capstone/test.php\" style=\"margin-left:2.5em\">";
+			echo "<form  action = \"/test.php\" style=\"margin-left:2.5em\">";
 		} else {
-			echo "<form  action = \"/capstone/index.php\" style=\"margin-left:2.5em\">";
+			echo "<form  action = \"/index.php\" style=\"margin-left:2.5em\">";
 		}
 	?>
 	
