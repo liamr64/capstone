@@ -24,7 +24,7 @@ AVAILABLE_ROOM = 'Available Room Data (should include all room types)'
 MYSQL_CONFIG = {
   'user': 'admin',
   'password': '1387194#',
-  'host': 'database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com',
+  'host': 'database-1.cnth4dgmksji.us-east-2.rds.amazonaws.com',
   'database': 'Capstone',
   'raise_on_warnings': True
 }
