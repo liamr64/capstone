@@ -31,6 +31,7 @@
 		$timeSet = strcmp($time, "") != 0;
 		$locationSet = strcmp($location, "Location...") != 0;
 		$peopleSet = strcmp($people, "Total Number of People") != 0;
+		echo $locationSet;
 		
 		
 		if ($lotterySet and $timeSet and $locationSet and $peopleSet) {
@@ -101,10 +102,13 @@
 				$location = $o["ResName"];
 				echo "<center> The room set up $RoomName is available in $location in $percentage percent of model runs </center> <br>";
 				}
-			echo "2";
 		}
 		else {
 			echo "<center>A time is required on order to use this tool</center>";
+			$noTime = True;
+		}
+		if (sizeof($modelData)== 0 and !$noTime){
+			echo "<center>There is no model data for the entered time </center>";
 		}
 		
 		#echo "lottery: $lottery, time: $time, people: $people, location $location";
