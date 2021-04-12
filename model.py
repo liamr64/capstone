@@ -25,7 +25,10 @@ def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
     curA.execute(query)
-    results = curA.fetchall()
+    try :
+        results = curA.fetchall()
+    except:
+        return
     conn.commit()
     conn.close()
     return results
