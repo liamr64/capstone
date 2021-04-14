@@ -92,15 +92,18 @@ def getSheets(sheetId,range, creds):
     values = result.get('values', [])
     return values
 
-def sendQuery(query):
+def sendQuery(query, insert):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
-    print(query)
     curA.execute(query)
-    results = curA.fetchall()
-    conn.commit()
-    conn.close()
-    return results
+    if not insert:
+        results = curA.fetchall()
+        conn.commit()
+        conn.close()
+        return results
+    else:
+        conn.commit()
+        conn.close()
 
 
 
@@ -112,8 +115,8 @@ def sendLotteryInfo(lotteryInfo, creds):
             values = 'VALUES ("%s", "%s","%s",%d, "%s", %d) ' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
             update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d;' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]))
             query = tables + values + update
-            sendQuery(query)
-            uniId=sendQuery('SELECT idLottery from Lottery;')
+            sendQuery(query, True)
+            uniId=sendQuery('SELECT idLottery from Lottery;', False)
             return uniId[0][0]
 
 def sendRoomData(lotteryInfo,uniId,creds):   
@@ -132,14 +135,14 @@ def processRoomData(data, uniId):
                 values = 'VALUES ("%s", %d) ' % (row[0], uniId)
                 update = 'ON DUPLICATE KEY UPDATE ResName = "%s";' % (row[0])
                 query = tables + values + update
-                sendQuery(query)
+                sendQuery(query, True)
                 findBuilding = 'SELECT idResidence_Hall from Residence_Hall where ResName = "%s" and Lottery_idLottery = %d;' % (row[0], uniId)
-                buildingId = sendQuery(findBuilding)
+                buildingId = sendQuery(findBuilding, False)
             tables = 'INSERT INTO Room (RoomName, Occupancy,numAvailable, Residence_Hall_idResidence_Hall) '
             values = 'VALUES ("%s", %d,%d,%d) ' % (row[3],int(row[2]),int(row[1]),buildingId[0][0])
             update = 'ON DUPLICATE KEY UPDATE numAvailable = %d;' % (int(row[1]))
             query = tables + values + update
-            sendQuery(query)
+            sendQuery(query, True)
 
 
                 
@@ -151,7 +154,7 @@ def sendSimData(lotteryInfo, uniId, creds):
     for year in files:
         data = getSheets(year['id'],'A2:F98',creds)
         roomIdsQuery = 'SELECT Room.RoomName, Residence_Hall.ResName, Room.id from Room inner join Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d;' %(uniId)
-        roomIds = sendQuery(roomIdsQuery)
+        roomIds = sendQuery(roomIdsQuery, False)
         roomDict = createRoomDict(roomIds)
         processSimData(data, year['name'], roomDict)
 
@@ -174,7 +177,7 @@ def processSimData(data, year, roomDict):
                 values = 'VALUES (%d, %d, "%s", %d, "%s") ' % (int(roomDict[data[i][j]]), int(year), data[i][0], j, timestamp)
                 update = 'ON DUPLICATE KEY UPDATE updateTime = "%s";' % (timestamp)
                 query = tables + values + update
-                sendQuery(query)
+                sendQuery(query, True)
             j= j +1
             
         i=i+1
