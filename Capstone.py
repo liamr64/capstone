@@ -95,6 +95,7 @@ def getSheets(sheetId,range, creds):
 def sendQuery(query):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
+    print(query)
     curA.execute(query)
     results = curA.fetchall()
     conn.commit()
