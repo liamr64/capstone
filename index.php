@@ -32,8 +32,9 @@
 			<div class = "col-0.5">
 				<br>
 				<select class="combo" name = "lottery" <?php if ($lotterySet){echo "disabled = \"disabled\"";} ?>>
+					
 					<?php
-						$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
+						$servername = "database-1.cnth4dgmksji.us-east-2.rds.amazonaws.com";
 						$username = "admin";
 						$dbname = "Capstone";
 						$password = "1387194#";
@@ -45,6 +46,7 @@
 							$stmt = $conn->prepare("SELECT LotteryName FROM Lottery");
 							$stmt->execute();
 							if ($lotterySet){
+								echo "hit";
 								$pulled = $_GET["lottery"];
 								echo "<option><i>$pulled</i></option>";
 							}
@@ -56,7 +58,7 @@
 							// set the resulting array to associative
 							$result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
 							$lotteries = $stmt->fetchAll();
-		
+							var_dump($lotteries);
 							
 							foreach ($lotteries as $l) {
 									$lotName = $l["LotteryName"];
@@ -87,10 +89,7 @@
 			
 				<select class="combo" name = "people" <?php if (!$lotterySet){echo "disabled = \"disabled\"";} ?>>
 				<?php
-						$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
-						$username = "admin";
-						$dbname = "Capstone";
-						$password = "1387194#";
+						
 
 						try {
 							$tempLottery = $_GET["lottery"];
@@ -136,10 +135,7 @@
 				<select class="combo"  name = "location" <?php if (!$lotterySet){echo "disabled = \"disabled\"";} ?>>
 				<option><i>Location...</i></option>
 				<?php
-						$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
-						$username = "admin";
-						$dbname = "Capstone";
-						$password = "1387194#";
+						
 
 						try {
 							$conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
