@@ -21,14 +21,18 @@ import random
 
 #This is my send query method, yes I know that it is not very fast
 #I plan to fix this, however Professor Krieder if you are reading this, I didn't
-def sendQuery(query):
+def sendQuery(query, insert):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
     curA.execute(query)
-    results = curA.fetchall()
-    conn.commit()
-    conn.close()
-    return results
+    if not insert:
+        results = curA.fetchall()
+        conn.commit()
+        conn.close()
+        return results
+    else:
+        conn.commit()
+        conn.close()
 
 #main model method
 def main():
@@ -36,7 +40,7 @@ def main():
     for lottery in lotteries:
         probs = getProbs(lottery)
         finalprobs = getOverallProbs(probs)
-        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery))[0][0]
+        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
         results = doModel(finalprobs, numSlots)
         processAndSend(results, lottery, numSlots)
 
@@ -44,7 +48,7 @@ def main():
 def getLotteries():
     lotteries = []
     query = 'SELECT idLottery FROM Lottery;'
-    temp = sendQuery(query)
+    temp = sendQuery(query, False)
     print(temp)
     for lottery in temp:
         lotteries.append(lottery[0])
@@ -60,7 +64,7 @@ def getProbs(lottery):
 
     while dataYear >= currentYear - 6 and len(data)>0:
         query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d and Residence_Hall_idResidence_Hall = idResidence_Hall;' % (lottery, dataYear) 
-        data = sendQuery(query)
+        data = sendQuery(query,False)
         if len(data) > 0:
             probs.append(processYear(data))
         dataYear = dataYear -1
@@ -86,7 +90,7 @@ def processYear(data):
             total = total + 1
         else:
             query = 'SELECT COUNT(Room_id) from SampleData where Room_id = %d;' % (int(roomId))
-            count =sendQuery(query)
+            count =sendQuery(query, False)
             totalNumber[roomId] = count[0][0]
             numberInFirst[roomId] = 1
             total = total + 1
@@ -203,15 +207,15 @@ def checkIfDone(probs):
 
 def getTotalAvailableRooms():
     numAvailable = {}
-    results = sendQuery('SELECT id, numAvailable FROM Room;')
+    results = sendQuery('SELECT id, numAvailable FROM Room;', False)
     for result in results:
         numAvailable[result[0]] = result[1]
     return numAvailable
     
 def processAndSend(results, lottery, numSlots):
     firstDict = results[0][0][0]
-    startTime = sendQuery('SELECT StartTime FROM Lottery WHERE idLottery = %d;' % (lottery))[0][0]
-    timeBetween = sendQuery('SELECT timeBetween FROM Lottery WHERE idLottery = %d;' % (lottery))[0][0]
+    startTime = sendQuery('SELECT StartTime FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
+    timeBetween = sendQuery('SELECT timeBetween FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
     startTime = datetime.strptime(startTime, '%I:%M')
     currentTime = startTime
 
@@ -243,7 +247,7 @@ def processAndSend(results, lottery, numSlots):
             values = 'VALUES (%d, "%s", %f) ' % (key, str(currentTime.time())[0:5], percentOccupied)
             update = 'ON DUPLICATE KEY UPDATE probability = %f;' % (percentOccupied)
             query = tables + values + update
-            sendQuery(query)
+            sendQuery(query, True)
 
         print("%s added to model" % (str(currentTime.time())[0:5]))
         currentTime = currentTime + timedelta(minutes=timeBetween)
