@@ -39,14 +39,14 @@ def main():
     for lottery in lotteries:
         probs = getProbs(lottery)
         finalprobs = getOverallProbs(probs)
-        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
+        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery))[0][0]
         results = doModel(finalprobs, numSlots)
         processAndSend(results, lottery, numSlots)
 
 #returns the total number of lotteries in the database
 def getLotteries():
     lotteries = []
-    query = 'SELECT idLottery FROM Lottery'
+    query = 'SELECT idLottery FROM Lottery;'
     temp = sendQuery(query)
 
     for lottery in temp:
@@ -62,7 +62,7 @@ def getProbs(lottery):
     probs = []
 
     while dataYear >= currentYear - 6 and len(data)>0:
-        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d and Residence_Hall_idResidence_Hall = idResidence_Hall' % (lottery, dataYear) 
+        query = 'SELECT Room_id, SampleData.Time, SampleData.Slot from SampleData INNER JOIN Room on SampleData.Room_id = Room.id INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and SampleData.Year = %d and Residence_Hall_idResidence_Hall = idResidence_Hall;' % (lottery, dataYear) 
         data = sendQuery(query)
         if len(data) > 0:
             probs.append(processYear(data))
@@ -88,7 +88,7 @@ def processYear(data):
             numberInFirst[roomId] = numberInFirst[roomId] + 1
             total = total + 1
         else:
-            query = 'SELECT COUNT(Room_id) from SampleData where Room_id = %d' % (int(roomId))
+            query = 'SELECT COUNT(Room_id) from SampleData where Room_id = %d;' % (int(roomId))
             count =sendQuery(query)
             totalNumber[roomId] = count[0][0]
             numberInFirst[roomId] = 1
@@ -206,15 +206,15 @@ def checkIfDone(probs):
 
 def getTotalAvailableRooms():
     numAvailable = {}
-    results = sendQuery('SELECT id, numAvailable FROM Room')
+    results = sendQuery('SELECT id, numAvailable FROM Room;')
     for result in results:
         numAvailable[result[0]] = result[1]
     return numAvailable
     
 def processAndSend(results, lottery, numSlots):
     firstDict = results[0][0][0]
-    startTime = sendQuery('SELECT StartTime FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
-    timeBetween = sendQuery('SELECT timeBetween FROM Lottery WHERE idLottery = %d' % (lottery))[0][0]
+    startTime = sendQuery('SELECT StartTime FROM Lottery WHERE idLottery = %d;' % (lottery))[0][0]
+    timeBetween = sendQuery('SELECT timeBetween FROM Lottery WHERE idLottery = %d;' % (lottery))[0][0]
     startTime = datetime.strptime(startTime, '%I:%M')
     currentTime = startTime
 
@@ -244,7 +244,7 @@ def processAndSend(results, lottery, numSlots):
             percentOccupied = float(value)/float(NUMBER_OF_REPS * numSlots)
             tables = 'INSERT INTO ModelData (Room_id, Time, probability) '
             values = 'VALUES (%d, "%s", %f) ' % (key, str(currentTime.time())[0:5], percentOccupied)
-            update = 'ON DUPLICATE KEY UPDATE probability = %f' % (percentOccupied)
+            update = 'ON DUPLICATE KEY UPDATE probability = %f;' % (percentOccupied)
             query = tables + values + update
             sendQuery(query)
 
