@@ -45,7 +45,7 @@ def getLotteries():
     lotteries = []
     query = 'SELECT idLottery FROM Lottery;'
     temp = sendQuery(query)
-
+    print(temp)
     for lottery in temp:
         lotteries.append(lottery[0])
 
