@@ -146,7 +146,6 @@ def modelRun(probs, numAvailable, numSlots):
     for key, value in numAvailable.items():
         if value != 0:
             zeroProb[key] = value
-    print(zeroProb)
     if len(zeroProb) > 0:
         newProb = {}
         for key, value in zeroProb.items():
@@ -249,7 +248,6 @@ def processAndSend(results, lottery, numSlots):
             values = 'VALUES (%d, "%s", %f) ' % (key, str(currentTime.time())[0:5], percentOccupied)
             update = 'ON DUPLICATE KEY UPDATE probability = %f;' % (percentOccupied)
             query = tables + values + update
-            print(query)
             sendQuery(query, True)
 
         print("%s added to model" % (str(currentTime.time())[0:5]))
