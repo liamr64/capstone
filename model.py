@@ -164,7 +164,6 @@ def modelRun(probs, numAvailable, numSlots):
                         newProb, anotherRow = adjustProbs(newProb, room)
             available.append(availableRow)
             count = count +1
-        print(count) 
     
     return available   
 
