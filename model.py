@@ -19,8 +19,7 @@ from operator import itemgetter
 from scipy.stats import hypergeom
 import random
 
-#This is my send query method, yes I know that it is not very fast
-#I plan to fix this, however Professor Krieder if you are reading this, I didn't
+#Sends query to the database
 def sendQuery(query, insert):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
@@ -39,17 +38,17 @@ def main():
     lotteries = getLotteries()
     for lottery in lotteries:
         probs = getProbs(lottery)
-        finalprobs = getOverallProbs(probs)
-        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
-        results = doModel(finalprobs, numSlots)
-        processAndSend(results, lottery, numSlots)
+        if len(probs) != 0: 
+            finalprobs = getOverallProbs(probs)
+            numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
+            results = doModel(finalprobs, numSlots, lottery)
+            processAndSend(results, lottery, numSlots)
 
 #returns the total number of lotteries in the database
 def getLotteries():
     lotteries = []
     query = 'SELECT idLottery FROM Lottery;'
     temp = sendQuery(query, False)
-    print(temp)
     for lottery in temp:
         lotteries.append(lottery[0])
 
@@ -113,8 +112,8 @@ def getOverallProbs(listProbs):
         return (.5 * listProbs[0]) + (.125 * listProbs[1]) + (.125 * listProbs[2]) + (.125 * listProbs[3])+ (.125 * listProbs[4])
 
 #Onece specific room probablities have been created, this is where the Monte Carlo happens
-def doModel(probs, numSlots):
-    numAvailable = getTotalAvailableRooms()
+def doModel(probs, numSlots, lottery):
+    numAvailable = getTotalAvailableRooms(lottery)
     modelRuns = []
     for i in range(0,NUMBER_OF_REPS):
         tempProbs = dict(probs)
@@ -147,12 +146,13 @@ def modelRun(probs, numAvailable, numSlots):
     for key, value in numAvailable.items():
         if value != 0:
             zeroProb[key] = value
-    
+    print(zeroProb)
     if len(zeroProb) > 0:
         newProb = {}
         for key, value in zeroProb.items():
             newProb[key] = 1/len(zeroProb)
         anotherRow = True
+        count = 0
         while anotherRow:
             for j in range(0,numSlots):
                 hvar = dist.pmf(i)
@@ -163,7 +163,9 @@ def modelRun(probs, numAvailable, numSlots):
                     numAvailable[room] = numAvailable[room] -1
                     if numAvailable[room] == 0:
                         newProb, anotherRow = adjustProbs(newProb, room)
-            available.append(availableRow) 
+            available.append(availableRow)
+            count = count +1
+        print(count) 
     
     return available   
 
@@ -205,9 +207,9 @@ def checkIfDone(probs):
             return True
     return False
 
-def getTotalAvailableRooms():
+def getTotalAvailableRooms(lottery):
     numAvailable = {}
-    results = sendQuery('SELECT id, numAvailable FROM Room;', False)
+    results = sendQuery('SELECT id, numAvailable FROM Room INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and Residence_Hall_idResidence_Hall = idResidence_Hall;' % (lottery), False)
     for result in results:
         numAvailable[result[0]] = result[1]
     return numAvailable
@@ -247,6 +249,7 @@ def processAndSend(results, lottery, numSlots):
             values = 'VALUES (%d, "%s", %f) ' % (key, str(currentTime.time())[0:5], percentOccupied)
             update = 'ON DUPLICATE KEY UPDATE probability = %f;' % (percentOccupied)
             query = tables + values + update
+            print(query)
             sendQuery(query, True)
 
         print("%s added to model" % (str(currentTime.time())[0:5]))

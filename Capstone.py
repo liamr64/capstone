@@ -38,7 +38,7 @@ def main():
     creds = getCreds()
 
     lotteries = getFiles(MAIN_DIRECTORY, creds)
-
+    
     if lotteries is None:
         print("There are no lotteries.  Even I'm not that good")
     for lottery in lotteries:
@@ -116,10 +116,11 @@ def sendLotteryInfo(lotteryInfo, creds):
             update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d;' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]))
             query = tables + values + update
             sendQuery(query, True)
-            uniId=sendQuery('SELECT idLottery from Lottery;', False)
+            getId = 'SELECT idLottery from Lottery where LotteryName = "%s";' % (data[0][1])
+            uniId=sendQuery(getId, False)
             return uniId[0][0]
 
-def sendRoomData(lotteryInfo,uniId,creds):   
+def sendRoomData(lotteryInfo,uniId,creds): 
     for doc in lotteryInfo:   
         if doc['name'] == AVAILABLE_ROOM:
             data = getSheets(doc['id'], 'A1:E32', creds)
@@ -147,10 +148,14 @@ def processRoomData(data, uniId):
 
                 
 def sendSimData(lotteryInfo, uniId, creds):
+    simDataPresent = False
     for doc in lotteryInfo:
         if doc['name'] == 'Faked Data':
             files = getFiles(doc['id'], creds)
+            simDataPresent = True
             break
+    if  not simDataPresent:
+        return
     for year in files:
         data = getSheets(year['id'],'A2:F98',creds)
         roomIdsQuery = 'SELECT Room.RoomName, Residence_Hall.ResName, Room.id from Room inner join Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d;' %(uniId)
