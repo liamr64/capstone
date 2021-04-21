@@ -45,7 +45,8 @@ def main():
         print("There are no lotteries.  Even I'm not that good")
     for lottery in lotteries:
         lotteryInfo = getFiles(lottery['id'],creds)
-        uniId =sendLotteryInfo(lotteryInfo, creds)
+        updateId = showUpdate(lotteryInfo, creds)
+        uniId =sendLotteryInfo(lotteryInfo,updateId, creds)
         sendRoomData(lotteryInfo, uniId,creds)
         sendSimData(lotteryInfo,uniId, creds)
         showUpdate(lotteryInfo, creds)
@@ -108,13 +109,13 @@ def sendQuery(query, insert):
 
 
 
-def sendLotteryInfo(lotteryInfo, creds):
+def sendLotteryInfo(lotteryInfo, updateId, creds):
     for doc in lotteryInfo:
         if doc['name'] == LOTTERY_DATA:
             data = getSheets(doc['id'], 'A1:B6', creds)
-            tables = 'INSERT INTO Lottery (LotteryName, University,StartTime,timeBetween, numSlots, numTimes) '
-            values = 'VALUES ("%s", "%s","%s",%d, "%s", %d) ' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
-            update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d;' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]))
+            tables = 'INSERT INTO Lottery (LotteryName, University,StartTime,timeBetween, numSlots, numTimes, updateTableid) '
+            values = 'VALUES ("%s", "%s","%s",%d, "%s", %d, "%s") ' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]), updateId)
+            update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d, updateTableid = "%s";' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]),updateId)
             query = tables + values + update
             sendQuery(query, True)
             getId = 'SELECT idLottery from Lottery where LotteryName = "%s";' % (data[0][1])
@@ -195,10 +196,11 @@ def showUpdate(lotteryInfo, creds):
             range_ = 'B1'
             value_input_option = 'RAW'
             now = datetime.now()
-            array = [now.strftime("%d/%m/%Y %H:%M:%S")]
+            array = [now.strftime("%m/%d/%Y %H:%M:%S")]
             value_range_body = {"range": "B1", "values": [array]}
             request = service.spreadsheets().values().update(spreadsheetId=doc['id'], range=range_, valueInputOption=value_input_option, body=value_range_body)
             response = request.execute()
+            return doc['id']
 
 
 if __name__ == '__main__':

@@ -12,12 +12,26 @@ MYSQL_CONFIG = {
 #constant determining the number of times the polar runs
 NUMBER_OF_REPS = 1000
 
+
+
 import mysql.connector
 from datetime import datetime
 from datetime import timedelta
 from operator import itemgetter
 from scipy.stats import hypergeom
 import random
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
+from googleapiclient import discovery
+
+SCOPES = ['https://www.googleapis.com/auth/drive']
+credentials = service_account.Credentials.from_service_account_file(
+        'Capstone-7383c5975015.json', scopes=SCOPES)
+delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
 
 #Sends query to the database
 def sendQuery(query, insert):
@@ -33,6 +47,29 @@ def sendQuery(query, insert):
         conn.commit()
         conn.close()
 
+def getCreds():
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            creds = service_account.Credentials.from_service_account_file(
+        'Capstone-7383c5975015.json', scopes=SCOPES)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+    
+    return creds
+
+
 #main model method
 def main():
     lotteries = getLotteries()
@@ -43,6 +80,20 @@ def main():
             numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
             results = doModel(finalprobs, numSlots, lottery)
             processAndSend(results, lottery, numSlots)
+            updateSheets(lottery)
+ 
+ #updates sheets
+def updateSheets(lottery):
+    updateId = sendQuery('SELECT updateTableid FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
+    creds = getCreds()
+    service = discovery.build('sheets', 'v4', credentials=creds)
+    range_ = 'B2'
+    value_input_option = 'RAW'
+    now = datetime.now()
+    array = [now.strftime("%m/%d/%Y %H:%M:%S")]
+    value_range_body = {"range": "B2", "values": [array]}
+    request = service.spreadsheets().values().update(spreadsheetId=updateId, range=range_, valueInputOption=value_input_option, body=value_range_body)
+    response = request.execute()
 
 #returns the total number of lotteries in the database
 def getLotteries():
