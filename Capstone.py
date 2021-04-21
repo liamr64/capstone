@@ -1,17 +1,18 @@
 from __future__ import print_function
 import pickle
 import os.path
-import datetime
+from datetime import datetime
 import time
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
+from googleapiclient import discovery
 
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly','https://www.googleapis.com/auth/drive.metadata.readonly']
+SCOPES = ['https://www.googleapis.com/auth/drive']
 credentials = service_account.Credentials.from_service_account_file(
         'Capstone-7383c5975015.json', scopes=SCOPES)
 delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
@@ -21,6 +22,7 @@ MAIN_DIRECTORY = '1XlVByPlwLujL36kwCk4JVpaaP4_QqPvk'
 SAMPLE_RANGE_NAME = 'Class Data!A2:E'
 LOTTERY_DATA = 'Lottery Data'
 AVAILABLE_ROOM = 'Available Room Data (should include all room types)'
+UPDATE_TIMES = 'Update Times'
 MYSQL_CONFIG = {
   'user': 'admin',
   'password': '1387194#',
@@ -38,17 +40,17 @@ def main():
     creds = getCreds()
 
     lotteries = getFiles(MAIN_DIRECTORY, creds)
-
+    
     if lotteries is None:
         print("There are no lotteries.  Even I'm not that good")
     for lottery in lotteries:
         lotteryInfo = getFiles(lottery['id'],creds)
-        uniId =sendLotteryInfo(lotteryInfo, creds)
+        updateId = showUpdate(lotteryInfo, creds)
+        uniId =sendLotteryInfo(lotteryInfo,updateId, creds)
         sendRoomData(lotteryInfo, uniId,creds)
         sendSimData(lotteryInfo,uniId, creds)
+        showUpdate(lotteryInfo, creds)
 
-
-    
 
 
 def getCreds():
@@ -68,7 +70,7 @@ def getCreds():
             creds = service_account.Credentials.from_service_account_file(
         'Capstone-7383c5975015.json', scopes=SCOPES)
         # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
+        with open('/var/www/html/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     
     return creds
@@ -107,19 +109,20 @@ def sendQuery(query, insert):
 
 
 
-def sendLotteryInfo(lotteryInfo, creds):
+def sendLotteryInfo(lotteryInfo, updateId, creds):
     for doc in lotteryInfo:
         if doc['name'] == LOTTERY_DATA:
             data = getSheets(doc['id'], 'A1:B6', creds)
-            tables = 'INSERT INTO Lottery (LotteryName, University,StartTime,timeBetween, numSlots, numTimes) '
-            values = 'VALUES ("%s", "%s","%s",%d, "%s", %d) ' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]))
-            update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d;' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]))
+            tables = 'INSERT INTO Lottery (LotteryName, University,StartTime,timeBetween, numSlots, numTimes, updateTableid) '
+            values = 'VALUES ("%s", "%s","%s",%d, "%s", %d, "%s") ' % (data[0][1],data[1][1],data[2][1],int(data[3][1]),data[4][1],int(data[5][1]), updateId)
+            update = 'ON DUPLICATE KEY UPDATE StartTime = "%s",timeBetween = %d, numSlots = %d, numTimes = %d, updateTableid = "%s";' % (data[2][1],int(data[3][1]),int(data[4][1]),int(data[5][1]),updateId)
             query = tables + values + update
             sendQuery(query, True)
-            uniId=sendQuery('SELECT idLottery from Lottery;', False)
+            getId = 'SELECT idLottery from Lottery where LotteryName = "%s";' % (data[0][1])
+            uniId=sendQuery(getId, False)
             return uniId[0][0]
 
-def sendRoomData(lotteryInfo,uniId,creds):   
+def sendRoomData(lotteryInfo,uniId,creds): 
     for doc in lotteryInfo:   
         if doc['name'] == AVAILABLE_ROOM:
             data = getSheets(doc['id'], 'A1:E32', creds)
@@ -147,10 +150,14 @@ def processRoomData(data, uniId):
 
                 
 def sendSimData(lotteryInfo, uniId, creds):
+    simDataPresent = False
     for doc in lotteryInfo:
         if doc['name'] == 'Faked Data':
             files = getFiles(doc['id'], creds)
+            simDataPresent = True
             break
+    if  not simDataPresent:
+        return
     for year in files:
         data = getSheets(year['id'],'A2:F98',creds)
         roomIdsQuery = 'SELECT Room.RoomName, Residence_Hall.ResName, Room.id from Room inner join Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d;' %(uniId)
@@ -167,7 +174,7 @@ def createRoomDict(roomIds):
 
 def processSimData(data, year, roomDict):
     ts = time.time()
-    timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     i = 0
     while i<len(data):
         j = 1
@@ -181,6 +188,19 @@ def processSimData(data, year, roomDict):
             j= j +1
             
         i=i+1
+
+def showUpdate(lotteryInfo, creds):
+    for doc in lotteryInfo:
+        if doc['name'] == UPDATE_TIMES:
+            service = discovery.build('sheets', 'v4', credentials=creds)
+            range_ = 'B1'
+            value_input_option = 'RAW'
+            now = datetime.now()
+            array = [now.strftime("%m/%d/%Y %H:%M:%S")]
+            value_range_body = {"range": "B1", "values": [array]}
+            request = service.spreadsheets().values().update(spreadsheetId=doc['id'], range=range_, valueInputOption=value_input_option, body=value_range_body)
+            response = request.execute()
+            return doc['id']
 
 
 if __name__ == '__main__':

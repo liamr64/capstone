@@ -12,15 +12,28 @@ MYSQL_CONFIG = {
 #constant determining the number of times the polar runs
 NUMBER_OF_REPS = 1000
 
+
+
 import mysql.connector
 from datetime import datetime
 from datetime import timedelta
 from operator import itemgetter
 from scipy.stats import hypergeom
 import random
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
+from googleapiclient import discovery
 
-#This is my send query method, yes I know that it is not very fast
-#I plan to fix this, however Professor Krieder if you are reading this, I didn't
+SCOPES = ['https://www.googleapis.com/auth/drive']
+credentials = service_account.Credentials.from_service_account_file(
+        'Capstone-7383c5975015.json', scopes=SCOPES)
+delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
+
+#Sends query to the database
 def sendQuery(query, insert):
     conn = mysql.connector.connect(**MYSQL_CONFIG)
     curA = conn.cursor()
@@ -34,22 +47,59 @@ def sendQuery(query, insert):
         conn.commit()
         conn.close()
 
+def getCreds():
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            creds = service_account.Credentials.from_service_account_file(
+        'Capstone-7383c5975015.json', scopes=SCOPES)
+        # Save the credentials for the next run
+        with open('/var/www/html/token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+    
+    return creds
+
+
 #main model method
 def main():
     lotteries = getLotteries()
     for lottery in lotteries:
         probs = getProbs(lottery)
-        finalprobs = getOverallProbs(probs)
-        numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
-        results = doModel(finalprobs, numSlots)
-        processAndSend(results, lottery, numSlots)
+        if len(probs) != 0: 
+            finalprobs = getOverallProbs(probs)
+            numSlots = sendQuery('SELECT numSlots FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
+            results = doModel(finalprobs, numSlots, lottery)
+            processAndSend(results, lottery, numSlots)
+            updateSheets(lottery)
+ 
+ #updates sheets
+def updateSheets(lottery):
+    updateId = sendQuery('SELECT updateTableid FROM Lottery WHERE idLottery = %d;' % (lottery), False)[0][0]
+    creds = getCreds()
+    service = discovery.build('sheets', 'v4', credentials=creds)
+    range_ = 'B2'
+    value_input_option = 'RAW'
+    now = datetime.now()
+    array = [now.strftime("%m/%d/%Y %H:%M:%S")]
+    value_range_body = {"range": "B2", "values": [array]}
+    request = service.spreadsheets().values().update(spreadsheetId=updateId, range=range_, valueInputOption=value_input_option, body=value_range_body)
+    response = request.execute()
 
 #returns the total number of lotteries in the database
 def getLotteries():
     lotteries = []
     query = 'SELECT idLottery FROM Lottery;'
     temp = sendQuery(query, False)
-    print(temp)
     for lottery in temp:
         lotteries.append(lottery[0])
 
@@ -113,8 +163,8 @@ def getOverallProbs(listProbs):
         return (.5 * listProbs[0]) + (.125 * listProbs[1]) + (.125 * listProbs[2]) + (.125 * listProbs[3])+ (.125 * listProbs[4])
 
 #Onece specific room probablities have been created, this is where the Monte Carlo happens
-def doModel(probs, numSlots):
-    numAvailable = getTotalAvailableRooms()
+def doModel(probs, numSlots, lottery):
+    numAvailable = getTotalAvailableRooms(lottery)
     modelRuns = []
     for i in range(0,NUMBER_OF_REPS):
         tempProbs = dict(probs)
@@ -147,12 +197,12 @@ def modelRun(probs, numAvailable, numSlots):
     for key, value in numAvailable.items():
         if value != 0:
             zeroProb[key] = value
-    
     if len(zeroProb) > 0:
         newProb = {}
         for key, value in zeroProb.items():
             newProb[key] = 1/len(zeroProb)
         anotherRow = True
+        count = 0
         while anotherRow:
             for j in range(0,numSlots):
                 hvar = dist.pmf(i)
@@ -163,7 +213,8 @@ def modelRun(probs, numAvailable, numSlots):
                     numAvailable[room] = numAvailable[room] -1
                     if numAvailable[room] == 0:
                         newProb, anotherRow = adjustProbs(newProb, room)
-            available.append(availableRow) 
+            available.append(availableRow)
+            count = count +1
     
     return available   
 
@@ -205,9 +256,9 @@ def checkIfDone(probs):
             return True
     return False
 
-def getTotalAvailableRooms():
+def getTotalAvailableRooms(lottery):
     numAvailable = {}
-    results = sendQuery('SELECT id, numAvailable FROM Room;', False)
+    results = sendQuery('SELECT id, numAvailable FROM Room INNER JOIN Residence_Hall on Room.Residence_Hall_idResidence_Hall = idResidence_Hall where Lottery_idLottery = %d and Residence_Hall_idResidence_Hall = idResidence_Hall;' % (lottery), False)
     for result in results:
         numAvailable[result[0]] = result[1]
     return numAvailable
