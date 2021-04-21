@@ -1,17 +1,18 @@
 from __future__ import print_function
 import pickle
 import os.path
-import datetime
+from datetime import datetime
 import time
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
+from googleapiclient import discovery
 
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly','https://www.googleapis.com/auth/drive.metadata.readonly']
+SCOPES = ['https://www.googleapis.com/auth/drive']
 credentials = service_account.Credentials.from_service_account_file(
         'Capstone-7383c5975015.json', scopes=SCOPES)
 delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
@@ -21,6 +22,7 @@ MAIN_DIRECTORY = '1XlVByPlwLujL36kwCk4JVpaaP4_QqPvk'
 SAMPLE_RANGE_NAME = 'Class Data!A2:E'
 LOTTERY_DATA = 'Lottery Data'
 AVAILABLE_ROOM = 'Available Room Data (should include all room types)'
+UPDATE_TIMES = 'Update Times'
 MYSQL_CONFIG = {
   'user': 'admin',
   'password': '1387194#',
@@ -46,9 +48,8 @@ def main():
         uniId =sendLotteryInfo(lotteryInfo, creds)
         sendRoomData(lotteryInfo, uniId,creds)
         sendSimData(lotteryInfo,uniId, creds)
+        showUpdate(lotteryInfo, creds)
 
-
-    
 
 
 def getCreds():
@@ -172,7 +173,7 @@ def createRoomDict(roomIds):
 
 def processSimData(data, year, roomDict):
     ts = time.time()
-    timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
     i = 0
     while i<len(data):
         j = 1
@@ -186,6 +187,18 @@ def processSimData(data, year, roomDict):
             j= j +1
             
         i=i+1
+
+def showUpdate(lotteryInfo, creds):
+    for doc in lotteryInfo:
+        if doc['name'] == UPDATE_TIMES:
+            service = discovery.build('sheets', 'v4', credentials=creds)
+            range_ = 'B1'
+            value_input_option = 'RAW'
+            now = datetime.now()
+            array = [now.strftime("%d/%m/%Y %H:%M:%S")]
+            value_range_body = {"range": "B1", "values": [array]}
+            request = service.spreadsheets().values().update(spreadsheetId=doc['id'], range=range_, valueInputOption=value_input_option, body=value_range_body)
+            response = request.execute()
 
 
 if __name__ == '__main__':
