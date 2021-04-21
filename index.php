@@ -15,9 +15,10 @@
 		$lotterySet = (isset($_GET["lottery"]) and strcmp($_GET["lottery"], "Enter Lottery...") !== 0);
 		$timeSet = isset($_GET["time"]);
 		if ($lotterySet){
-			echo "<form  action = \"/test.php\" style=\"margin-left:2.5em\">";
+			$pulled = $_GET["lottery"];
+			echo "<form  action = \"test.php\" style=\"margin-left:2.5em\">";
 		} else {
-			echo "<form  action = \"/index.php\" style=\"margin-left:2.5em\">";
+			echo "<form  action = \"index.php\" style=\"margin-left:2.5em\">";
 		}
 	?>
 	
@@ -28,17 +29,21 @@
 			<div class = "col-1.5">
 				<body> <br> &nbsp; &nbsp; I am participating in &nbsp;</body>
 			</div>
-			
+			<?php
+				if ($lotterySet){
+					echo "<input type=\"hidden\" name=\"lottery\" value=\"$pulled\">";
+				}
+			?>
 			<div class = "col-0.5">
 				<br>
-				<select class="combo" name = "lottery" <?php if ($lotterySet){echo "disabled = \"disabled\"";} ?>>
+				<select class="combo" name = "lottery" <?php if ($lotterySet){echo "disabled = \"disabled\" value = \"$pulled\"";} ?>>
 					
 					<?php
 						$servername = "database-1.cnth4dgmksji.us-east-2.rds.amazonaws.com";
 						$username = "admin";
 						$dbname = "Capstone";
 						$password = "1387194#";
-
+						
 						try {
 							$conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
 							// set the PDO error mode to exception
@@ -46,8 +51,6 @@
 							$stmt = $conn->prepare("SELECT LotteryName FROM Lottery");
 							$stmt->execute();
 							if ($lotterySet){
-								echo "hit";
-								$pulled = $_GET["lottery"];
 								echo "<option><i>$pulled</i></option>";
 							}
 							else {
@@ -176,8 +179,9 @@
 		<body style="margin-left:2.5em"><b> This website is designed to help predict the housing lottery for the university lotteries and give users a probablistic estimate of what housing will be available at a given time slot.  
 		In order to use it, you need to know which lottery you are participating it and what time slot you have.  You can then narrow your results by occupancy, location or both.  
 		Currently the site works for the following universites:<br>
-		CNU (Sophmore Housing Lottery)<br>
-		CNU (Upperclassman Housing Lottery)</b><br><br>
+		CNU (Upperclassman Housing Lottery)<br>
+		The model does not have data for the CNU Sophmore lottery, but this is still an option to show functionality</b>
+		<br> <br>
 		
 		</body>
 		

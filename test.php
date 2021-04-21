@@ -12,7 +12,7 @@
 
 <body>
 <?php  
-	$servername = "database-1.ceb0m91rauea.us-east-1.rds.amazonaws.com";
+	$servername = "database-1.cnth4dgmksji.us-east-2.rds.amazonaws.com";
 	$username = "admin";
 	$dbname = "Capstone";
 	$password = "1387194#";
@@ -35,8 +35,8 @@
 		
 		
 		if ($lotterySet and $timeSet and $locationSet and $peopleSet) {
-			$query = "SELECT ModelData.probability, Room.RoomName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall
-					 WHERE ModelData.Time = \"$time\" and Residence_Hall.ResName = \"$location\" and Room.Occupancy = $people and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
+			$query = "SELECT ModelData.probability, Room.RoomName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall INNER JOIN Lottery on Residence_Hall.Lottery_idLottery = Lottery.idLottery
+					 WHERE ModelData.Time = \"$time\" and Residence_Hall.ResName = \"$location\" and Room.Occupancy = $people and Lottery.LotteryName = \"$lottery\" and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
 			$stmt = $conn->prepare($query);
 			$stmt->execute();
 			// set the resulting array to associative
@@ -52,8 +52,8 @@
 			#echo $query;
 		}
 		else if ($lotterySet and $timeSet and $locationSet) {
-			$query = "SELECT ModelData.probability, Room.RoomName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall
-					 WHERE ModelData.Time = \"$time\" and Residence_Hall.ResName = \"$location\" and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
+			$query = "SELECT ModelData.probability, Room.RoomName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall INNER JOIN Lottery on Residence_Hall.Lottery_idLottery = Lottery.idLottery
+					 WHERE ModelData.Time = \"$time\" and Residence_Hall.ResName = \"$location\" and Lottery.LotteryName = \"$lottery\" and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
 			$stmt = $conn->prepare($query);
 			$stmt->execute();
 			// set the resulting array to associative
@@ -69,8 +69,8 @@
 			#echo $query;
 		}
 		else if ($lotterySet and $timeSet and $peopleSet) {
-			$query = "SELECT ModelData.probability, Room.RoomName, Residence_Hall.ResName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall
-					 WHERE ModelData.Time = \"$time\" and Room.Occupancy = $people and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
+			$query = "SELECT ModelData.probability, Room.RoomName, Residence_Hall.ResName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall INNER JOIN Lottery on Residence_Hall.Lottery_idLottery = Lottery.idLottery
+					 WHERE ModelData.Time = \"$time\" and Room.Occupancy = $people and Lottery.LotteryName = \"$lottery\" and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
 			$stmt = $conn->prepare($query);
 			$stmt->execute();
 			// set the resulting array to associative
@@ -87,8 +87,8 @@
 			echo "1";
 		}
 		else if ($lotterySet and $timeSet) {
-			$query = "SELECT ModelData.probability, Room.RoomName, Residence_Hall.ResName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall
-					 WHERE ModelData.Time = \"$time\" and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
+			$query = "SELECT ModelData.probability, Room.RoomName, Residence_Hall.ResName FROM ModelData INNER JOIN Room on ModelData.Room_id INNER JOIN Residence_Hall ON Room.Residence_Hall_idResidence_Hall INNER JOIN Lottery on Residence_Hall.Lottery_idLottery = Lottery.idLottery
+					 WHERE ModelData.Time = \"$time\" and Lottery.LotteryName = \"$lottery\" and Residence_Hall_idResidence_Hall = idResidence_Hall and id = Room_id";
 			$stmt = $conn->prepare($query);
 			$stmt->execute();
 			// set the resulting array to associative
@@ -107,7 +107,10 @@
 			echo "<center>A time is required on order to use this tool</center>";
 			$noTime = True;
 		}
-		if (sizeof($modelData)== 0 and !$noTime){
+		if ($lottery == "CNU Sophmore") {
+			echo "<center>There is no model data for this lottery (see note at bottom of last paige) </center>";
+		}
+		else if (sizeof($modelData)== 0 and !$noTime){
 			echo "<center>There is no model data for the entered time </center>";
 		}
 		
