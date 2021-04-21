@@ -30,7 +30,7 @@ from googleapiclient import discovery
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 credentials = service_account.Credentials.from_service_account_file(
-        'Capstone-7383c5975015.json', scopes=SCOPES)
+        '/var/www/html/Capstone-7383c5975015.json', scopes=SCOPES)
 delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
 
 #Sends query to the database
