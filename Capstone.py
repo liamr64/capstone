@@ -68,7 +68,7 @@ def getCreds():
             creds.refresh(Request())
         else:
             creds = service_account.Credentials.from_service_account_file(
-        'Capstone-7383c5975015.json', scopes=SCOPES)
+        '/var/www/html/Capstone-7383c5975015.json', scopes=SCOPES)
         # Save the credentials for the next run
         with open('/var/www/html/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
