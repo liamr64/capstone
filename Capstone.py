@@ -14,7 +14,7 @@ from googleapiclient import discovery
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/drive']
 credentials = service_account.Credentials.from_service_account_file(
-        'Capstone-7383c5975015.json', scopes=SCOPES)
+        '/var/www/html/Capstone-7383c5975015.json', scopes=SCOPES)
 delegated_credentials = credentials.with_subject('liam.rowell.17@cnu.edu')
 
 # The ID and range of a sample spreadsheet.
